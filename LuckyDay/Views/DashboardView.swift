@@ -11,6 +11,52 @@ struct DashboardView: View {
                     if let prediction = appState.getTodaysPrediction() {
                         // Today's prediction exists
                         PredictionCard(prediction: prediction)
+
+                        // Show provider selector for regeneration
+                        VStack(spacing: 12) {
+                            Text("Try a Different AI")
+                                .font(.headline)
+                                .foregroundColor(.primary)
+
+                            Text("Select another provider to get a new prediction")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            VStack(spacing: 10) {
+                                ForEach(AIProvider.allCases, id: \.self) { provider in
+                                    AIProviderCard(
+                                        provider: provider,
+                                        isSelected: appState.selectedProvider == provider,
+                                        hasAPIKey: appState.apiKeys[provider] != nil && !(appState.apiKeys[provider]?.isEmpty ?? true)
+                                    ) {
+                                        appState.setSelectedProvider(provider)
+                                    }
+                                }
+                            }
+
+                            Button(action: {
+                                Task {
+                                    await appState.generateTodaysPrediction()
+                                }
+                            }) {
+                                HStack {
+                                    Image(systemName: "arrow.clockwise")
+                                    Text("Regenerate with \(appState.selectedProvider.displayName)")
+                                }
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                                .foregroundColor(.white)
+                                .frame(maxWidth: .infinity)
+                                .padding()
+                                .background(Color.blue)
+                                .cornerRadius(10)
+                            }
+                            .disabled(appState.isLoading)
+                        }
+                        .padding()
+                        .background(Color(.secondarySystemBackground))
+                        .cornerRadius(16)
+                        .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
                     } else {
                         // No prediction for today
                         EmptyPredictionView()
@@ -28,18 +74,6 @@ struct DashboardView: View {
                 .padding()
             }
             .navigationTitle("Today's Fortune")
-            .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: {
-                        Task {
-                            await appState.generateTodaysPrediction()
-                        }
-                    }) {
-                        Image(systemName: "arrow.clockwise")
-                    }
-                    .disabled(appState.isLoading)
-                }
-            }
         }
     }
 }
@@ -174,11 +208,33 @@ struct EmptyPredictionView: View {
                 .font(.title2)
                 .fontWeight(.semibold)
 
-            Text("Tap the button below to discover your fortune for today")
+            Text("Choose your AI provider and discover your fortune for today")
                 .font(.body)
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
+
+            // AI Provider Selector
+            VStack(alignment: .leading, spacing: 12) {
+                Text("Choose AI Provider")
+                    .font(.headline)
+                    .foregroundColor(.primary)
+
+                VStack(spacing: 10) {
+                    ForEach(AIProvider.allCases, id: \.self) { provider in
+                        AIProviderCard(
+                            provider: provider,
+                            isSelected: appState.selectedProvider == provider,
+                            hasAPIKey: appState.apiKeys[provider] != nil && !(appState.apiKeys[provider]?.isEmpty ?? true)
+                        ) {
+                            appState.setSelectedProvider(provider)
+                        }
+                    }
+                }
+            }
+            .padding()
+            .background(Color(.secondarySystemBackground))
+            .cornerRadius(12)
 
             Button(action: {
                 Task {
@@ -191,6 +247,7 @@ struct EmptyPredictionView: View {
                 }
                 .font(.headline)
                 .foregroundColor(.white)
+                .frame(maxWidth: .infinity)
                 .padding()
                 .background(
                     LinearGradient(
@@ -208,6 +265,70 @@ struct EmptyPredictionView: View {
         .background(Color(.systemBackground))
         .cornerRadius(16)
         .shadow(color: .black.opacity(0.1), radius: 10, x: 0, y: 5)
+    }
+}
+
+struct AIProviderCard: View {
+    let provider: AIProvider
+    let isSelected: Bool
+    let hasAPIKey: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 12) {
+                // Provider icon
+                Image(systemName: provider.icon)
+                    .font(.title2)
+                    .foregroundColor(isSelected ? .white : .blue)
+                    .frame(width: 40, height: 40)
+                    .background(isSelected ? Color.blue : Color.blue.opacity(0.1))
+                    .cornerRadius(8)
+
+                // Provider info
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(provider.displayName)
+                        .font(.body)
+                        .fontWeight(isSelected ? .semibold : .regular)
+                        .foregroundColor(.primary)
+
+                    HStack(spacing: 4) {
+                        if hasAPIKey {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.green)
+                            Text("API Key configured")
+                                .font(.caption)
+                                .foregroundColor(.green)
+                        } else {
+                            Image(systemName: "exclamationmark.circle.fill")
+                                .font(.caption2)
+                                .foregroundColor(.orange)
+                            Text("API Key required")
+                                .font(.caption)
+                                .foregroundColor(.orange)
+                        }
+                    }
+                }
+
+                Spacer()
+
+                // Selection indicator
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundColor(.blue)
+                        .font(.title3)
+                }
+            }
+            .padding(12)
+            .background(isSelected ? Color.blue.opacity(0.1) : Color(.systemBackground))
+            .cornerRadius(10)
+            .overlay(
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+            )
+        }
+        .buttonStyle(PlainButtonStyle())
     }
 }
 
