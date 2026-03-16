@@ -2,6 +2,12 @@
 
 An iOS app that uses AI to predict your daily lucky color and provide personalized recommendations based on your birth date.
 
+## 🚀 Getting Started
+
+- **New to the project?** → Start with [QUICKSTART.md](QUICKSTART.md) (5 minutes)
+- **Need detailed setup?** → See [SETUP.md](SETUP.md) (step-by-step guide)
+- **Already set up?** → Continue reading below for features and usage
+
 ## Features
 
 - **Multiple AI Providers**: Choose between OpenAI (GPT), Claude, or Google Gemini
